@@ -4,11 +4,12 @@
     <id>$id$</id>
     <version>$version$</version>
     <title>$title$</title>
+    <readme>README.md</readme>
     <authors>$author$</authors>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <license type="expression">MIT</license>
     <!-- <icon>icon.png</icon> -->
-    <projectUrl>http://project_url_here_or_delete_this_line/</projectUrl>
+    <projectUrl>https://github.com/nguyenthao1988/VietQRHelper</projectUrl>
     <icon>logo.png</icon>
     <description>$description$</description>
     <releaseNotes>Summary of changes made in this release of the package.</releaseNotes>
@@ -17,5 +18,6 @@
   </metadata>
   <files>
     <file src="logo.png" target="" />
+    <file src="README.md" target="" />
   </files>
 </package>
