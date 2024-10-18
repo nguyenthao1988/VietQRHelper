@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
+
 
 namespace VietQRHelper
 {
@@ -57,18 +57,47 @@ namespace VietQRHelper
             return $"0000{crcCode:X}".Substring(Math.Max(0, $"0000{crcCode:X}".Length - 4));
         }
 
-        private static (string id, int length, string value, string nextValue) SliceContent(string content)
+        //private static (string id, int length, string value, string nextValue) SliceContent(string content)
+        //{
+        //    string id = content.Substring(0, 2);
+        //    int length = int.Parse(content.Substring(2, 2));
+        //    string value = content.Substring(4, length);
+        //    string nextValue = content.Substring(4 + length);
+        //    return (id, length, value, nextValue);
+        //}
+
+        private static SliceResult SliceContent(string content)
         {
             string id = content.Substring(0, 2);
             int length = int.Parse(content.Substring(2, 2));
             string value = content.Substring(4, length);
             string nextValue = content.Substring(4 + length);
-            return (id, length, value, nextValue);
+            return new SliceResult(id, length, value, nextValue);
+        }
+
+        public class SliceResult
+        {
+            public string Id { get; set; }
+            public int Length { get; set; }
+            public string Value { get; set; }
+            public string NextValue { get; set; }
+
+            public SliceResult(string id, int length, string value, string nextValue)
+            {
+                Id = id;
+                Length = length;
+                Value = value;
+                NextValue = nextValue;
+            }
         }
 
         private void ParseProviderInfo(string content)
         {
-            var (id, length, value, nextValue) = QRPay.SliceContent(content);
+            var result = QRPay.SliceContent(content);
+            var id = result.Id;
+            var value = result.Value;
+            var nextValue = result.NextValue;
+            var length = result.Length;
             switch (id)
             {
                 case ProviderFieldID.GUID:
@@ -98,7 +127,11 @@ namespace VietQRHelper
 
         private void ParseVietQRConsumer(string content)
         {
-            var (id, length, value, nextValue) = QRPay.SliceContent(content);
+            var result = QRPay.SliceContent(content);
+            var id = result.Id;
+            var value = result.Value;
+            var nextValue = result.NextValue;
+            var length = result.Length;
             switch (id)
             {
                 case VietQRConsumerFieldID.BANK_BIN:
@@ -116,7 +149,11 @@ namespace VietQRHelper
 
         private void ParseAdditionalData(string content)
         {
-            var (id, length, value, nextValue) = QRPay.SliceContent(content);
+            var result = QRPay.SliceContent(content);
+            var id = result.Id;
+            var value = result.Value;
+            var nextValue = result.NextValue;
+            var length = result.Length;
             switch (id)
             {
                 case AdditionalDataID.PURPOSE_OF_TRANSACTION:
@@ -146,7 +183,11 @@ namespace VietQRHelper
 
         private bool ParseRootContent(string content)
         {
-            var (id, length, value, nextValue) = QRPay.SliceContent(content);
+            var result = QRPay.SliceContent(content);
+            var id = result.Id;
+            var value = result.Value;
+            var nextValue = result.NextValue;
+            var length = result.Length;
             if (value.Length != length)
                 return invalid();
             switch (id)
@@ -323,28 +364,47 @@ namespace VietQRHelper
             string additionalData = QRPay.GenFieldData(FieldID.ADDITIONAL_DATA, additionalDataContent);
 
             // For EVMCo
-            string EVMCoContent = string.Join("",
-                (this.EVMCo ?? new Dictionary<string, string>()).Keys
-                .OrderBy(key => key)
-                .Select(key => {
-                    this.EVMCo.TryGetValue(key, out string value);
-                    return QRPay.GenFieldData(key, value);
-                }));
+            string EVMCoContent = GenerateContent(this.EVMCo);
 
-            // For unreserved
-            string unreservedContent = string.Join("",
-                (this.unreserved ?? new Dictionary<string, string>()).Keys
-                .OrderBy(key => key)
-                .Select(key => {
-                    this.unreserved.TryGetValue(key, out string value);
-                    return QRPay.GenFieldData(key, value);
-                }));
+            string unreservedContent = GenerateContent(this.unreserved);
+
+        
 
 
             string content = $"{version}{initMethod}{providerData}{category}{currency}{amountStr}{tipAndFeeType}{tipAndFeeAmount}{tipAndFeePercent}{nation}{merchantName}{city}{zipCode}{additionalData}{EVMCoContent}{unreservedContent}{FieldID.CRC}04";
             string crc = QRPay.GenCRCCode(content);
             return content + crc;
         }
+
+  
+
+        public string GenerateContent(Dictionary<string, string> inputDictionary)
+        {
+            // Initialize the output string
+            string content = string.Empty;
+
+            // Check if the dictionary is null, if so return empty string
+            if (inputDictionary != null)
+            {
+                // Get the keys and order them
+                List<string> keys = inputDictionary.Keys.ToList();
+                keys.Sort(); // Sort keys manually
+
+                foreach (string key in keys)
+                {
+                    // Try to get the value
+                    string value;
+                    inputDictionary.TryGetValue(key, out value);
+
+                    // Append the result of GenFieldData to the content string
+                    content += QRPay.GenFieldData(key, value);
+                }
+            }
+
+            return content;
+        }
+
+
 
         public void SetUnreservedField(string id, string value)
         {
